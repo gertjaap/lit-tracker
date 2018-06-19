@@ -9,10 +9,10 @@ var LitNode = require('../models/litnode');
 router.post('/announce', function(req, res) {
     req.checkBody('pbk', 'Public key is required').notEmpty().isAlphanumeric();
     req.checkBody('addr', 'Lit address is required').notEmpty().isAlphanumeric();
-    req.checkBody('url', 'url is required').notEmpty();
     req.checkBody('sig', 'Signature is required').notEmpty();
     var ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
     ip = ip.replace("::ffff:","")
+
     req.getValidationResult().then(function(errors) {
         if(!errors.isEmpty()) {
             var errs = [];
@@ -48,7 +48,7 @@ router.post('/announce', function(req, res) {
         // Check ecdsa(url, sig, pkey)
         var keyPair = btc.ECPair.fromPublicKeyBuffer(pbk);
         var sig = btc.ECSignature.fromDER(Buffer.from(req.body.sig, 'hex'));
-        if(!keyPair.verify(btc.crypto.sha256(req.body.url), sig)) {
+        if(!keyPair.verify(btc.crypto.sha256(req.body.ipv4 + req.body.ipv6), sig)) {
             return res.json({success: false,
                              message: 'Signature incorrect'
                             });
@@ -65,7 +65,7 @@ router.post('/announce', function(req, res) {
                 litnode = new LitNode();
             }
             
-            litnode.url = ip + ":2448";
+            litnode.ipv4 = ip;
             litnode.addr = req.body.addr;
             
             litnode.save(function(err) {
@@ -98,7 +98,8 @@ router.get('/:node_id', function(req, res) {
         return res.json({success: true,
                          node: {
                              addr: litnode.addr,
-                             url: litnode.url
+                             ipv4: litnode.ipv4,
+                             ipv6: litnode.ipv6
                          }
                         });
     });
