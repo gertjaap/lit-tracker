@@ -11,7 +11,8 @@ router.post('/announce', function(req, res) {
     req.checkBody('addr', 'Lit address is required').notEmpty().isAlphanumeric();
     req.checkBody('url', 'url is required').notEmpty();
     req.checkBody('sig', 'Signature is required').notEmpty();
-    
+    var ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+    ip = ip.replace("::ffff:","")
     req.getValidationResult().then(function(errors) {
         if(!errors.isEmpty()) {
             var errs = [];
@@ -64,7 +65,7 @@ router.post('/announce', function(req, res) {
                 litnode = new LitNode();
             }
             
-            litnode.url = req.body.url;
+            litnode.url = ip + ":2448";
             litnode.addr = req.body.addr;
             
             litnode.save(function(err) {
